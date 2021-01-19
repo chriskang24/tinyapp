@@ -55,20 +55,13 @@ app.post("/urls", (req, res) => {
 })
 
 // POST requests are used to CHANGE/DELETE/UPDATE/CREATE data
-app.post("/urls/:shortURL/delete", (req, res) => {
-  // res.send("ok")
 
+app.post("/urls/:shortURL/delete", (req, res) => {
   const idToDelete = req.params.shortURL;
   console.log(idToDelete);
   delete urlDatabase[idToDelete];
-
-  // console.log("REQ.PARAMS =>", req.params);
-  // console.log("LINKS =>", shortURL);
   res.redirect('/urls');
 })
-
-
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
