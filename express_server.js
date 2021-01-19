@@ -63,6 +63,19 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 })
 
+app.post("/urls/:shortURL", (req, res) => {
+  // res.send("ok")
+  // console.log(req.params.shortURL);
+
+  const newLink = req.body.urltoedit;
+  const keyToUpdate = req.params.shortURL
+
+  urlDatabase[keyToUpdate] = newLink
+
+  res.redirect('/urls');
+
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
