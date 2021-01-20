@@ -29,7 +29,7 @@ const users = {
 const existingEmail = function(email) {
   for(const user in users) {
     if (users[user].email === email) {
-      return true;
+      return users[user].id
     }
   }
 }
@@ -126,13 +126,30 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const username = req.body.username;
-  res.cookie('username', username);
-  res.redirect('/urls')
+
+  const providedEmail = req.body.email;
+  const providedPassword = req.body.password;
+
+  // console.log(providedEmail);
+  // console.log(providedPassword);
+
+  if (!existingEmail(providedEmail)) {
+    res.send(403, "Email not found")
+  } else {
+    const existingUserID = existingEmail(providedEmail);
+    if (providedPassword === users[existingUserID].password) {
+      res.cookie("user_id", existingUserID);
+      res.redirect("/urls")
+    } else {
+      res.send(403, "Incorrect password");
+    }
+
+  }
+
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('username')
+  res.clearCookie('user_id')
   res.redirect('/urls')
 });
 
@@ -141,8 +158,6 @@ app.post("/register", (req, res) => {
   const providedEmail = req.body.email;
   const providedPassword = req.body.password;
   const newUserID = generateRandomString();
-
-
   
 if (!providedEmail || !providedPassword) {
   res.send(400, "Please include a valid email and password into the form")
