@@ -14,8 +14,8 @@ const generateRandomString = function() {
 };
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userID1" },
+  "9sm5xK": { longURL: "http://www.google.ca", userID: "userID2" }
 };
 
 const users = {
@@ -60,7 +60,7 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlDatabase[req.params.shortURL].longURL,
     user: users[req.cookies["user_id"]],
   };
   res.render("urls_show", templateVars);
@@ -71,7 +71,7 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   if (longURL === undefined) {
     res.send(302);
   } else {
@@ -100,7 +100,12 @@ app.get("/login", (req, res) => {
 
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.cookies["user_id"],
+  };
+
+  console.log(urlDatabase);
   res.redirect(`/urls/${shortURL}`);
   // console.log(req.body);
 });
