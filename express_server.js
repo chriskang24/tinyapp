@@ -87,6 +87,13 @@ app.get("/register", (req, res) => {
 });
 
 
+app.get("/login", (req, res) => {
+  let templateVars = {
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("urls_login", templateVars);
+});
+
 
 
 // POST requests are used to CHANGE/DELETE/UPDATE/CREATE data
