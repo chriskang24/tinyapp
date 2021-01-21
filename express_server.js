@@ -1,6 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 const app = express();
 const PORT = 3000;
@@ -9,7 +11,7 @@ app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-const generateRandomString = function () {
+const generateRandomString = function() {
   return Math.random().toString(36).substr(2, 6);
 };
 
@@ -26,7 +28,7 @@ const users = {
   }
 };
 
-const existingEmail = function (email) {
+const existingEmail = function(email) {
   for (const user in users) {
     if (users[user].email === email) {
       return users[user].id;
@@ -34,13 +36,13 @@ const existingEmail = function (email) {
   }
 };
 
-const urlsForUser = function (id) {
+const urlsForUser = function(id) {
 
   const uniqueUserURLs = {};
 
   for (const shortURLs in urlDatabase) {
     if (urlDatabase[shortURLs].userID === id) {
-      uniqueUserURLs[shortURLs] = urlDatabase[shortURLs]
+      uniqueUserURLs[shortURLs] = urlDatabase[shortURLs];
     }
   }
 
@@ -134,7 +136,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   const userID = req.cookies["user_id"];
   const uniqueUserURLs = urlsForUser(userID);
 
-  console.log(uniqueUserURLs)
+  console.log(uniqueUserURLs);
 
   if (Object.keys(uniqueUserURLs).includes(req.params.shortURL)) {
     delete urlDatabase[req.params.shortURL];
@@ -184,13 +186,12 @@ app.post("/login", (req, res) => {
     res.send(403, "Email not found");
   } else {
     const existingUserID = existingEmail(providedEmail);
-    if (providedPassword === users[existingUserID].password) {
+    if (bcrypt.compareSync(providedPassword, users[existingUserID].password)) {
       res.cookie("user_id", existingUserID);
       res.redirect("/urls");
     } else {
       res.send(403, "Incorrect password");
     }
-
   }
 
 });
@@ -215,7 +216,7 @@ app.post("/register", (req, res) => {
     users[newUserID] = {
       id: newUserID,
       email: providedEmail,
-      password: providedPassword
+      password: bcrypt.hashSync(providedPassword, saltRounds)
     };
   }
   console.log(users);
