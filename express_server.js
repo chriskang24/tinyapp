@@ -31,13 +31,30 @@ const users = {
   }
 };
 
-const existingEmail = function(email) {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return users[user].id;
+// const existingEmail = function(email) {
+//   for (const user in users) {
+//     if (users[user].email === email) {
+//       return users[user].id;
+//     }
+//   }
+// };
+
+
+const existingUserCheck = function(email, database) {
+  for (const user in database) {
+    if (database[user].email === email) {
+      return database[user].id;
     }
   }
 };
+
+const existingEmailCheck = function(email, database) {
+  for (const user in database) {
+    if (database[user].email === email) {
+      return true;
+    }
+  }
+}
 
 const urlsForUser = function(id) {
 
@@ -77,6 +94,11 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+
+  const userID = req.session["user_id"];
+
+  if (userID) {
+
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
@@ -86,11 +108,15 @@ app.get("/urls/:shortURL", (req, res) => {
 
   console.log(templateVars);
   res.render("urls_show", templateVars);
+} else {
+  const templateVars = {
+    error: "Please Login to view unique URL links",
+    user: null,
+  }
+  res.render("urls_error", templateVars);
+}
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
@@ -164,6 +190,7 @@ app.post("/urls/:shortURL", (req, res) => {
   const userID = req.session["user_id"];
   const uniqueUserURLs = urlsForUser(userID);
 
+  
   if (Object.keys(uniqueUserURLs).includes(req.params.shortURL)) {
 
     const shortURL = req.params.shortURL;
@@ -185,15 +212,23 @@ app.post("/login", (req, res) => {
   // console.log(providedEmail);
   // console.log(providedPassword);
 
-  if (!existingEmail(providedEmail)) {
-    res.send(403, "Email not found");
+  if (!existingEmailCheck(providedEmail, users)) {
+    const templateVars = {
+      error: "Email not found",
+      user: null,
+    }
+    res.render("urls_error", templateVars);
   } else {
-    const existingUserID = existingEmail(providedEmail);
+    const existingUserID = existingUserCheck(providedEmail, users);
     if (bcrypt.compareSync(providedPassword, users[existingUserID].password)) {
       req.session["user_id"] = existingUserID;
       res.redirect("/urls");
     } else {
-      res.send(403, "Incorrect password");
+      const templateVars = {
+        error: "Incorrect Password",
+        user: null,
+      }
+      res.render("urls_error", templateVars);
     }
   }
 
@@ -211,10 +246,17 @@ app.post("/register", (req, res) => {
   const newUserID = generateRandomString();
   
   if (!providedEmail || !providedPassword) {
-    res.send(400, "Please include a valid email and password into the form");
-    res.redirect("/register");
-  } else if (existingEmail(providedEmail)) {
-    res.send(400, "An account already exists with this email address");
+    const templateVars = {
+      error: "Please include a valid email and password into the form",
+      user: null,
+    }
+    res.render("urls_error", templateVars);
+  } else if (existingEmailCheck(providedEmail, users)) {
+    const templateVars = {
+      error: "An account already exists with this email address",
+      user: null,
+    }
+    res.render("urls_error", templateVars);
   } else {
     users[newUserID] = {
       id: newUserID,
