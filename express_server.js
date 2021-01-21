@@ -12,11 +12,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
-}))
+}));
 
-const generateRandomString = function() {
-  return Math.random().toString(36).substr(2, 6);
-};
+const { generateRandomString, existingUserCheck, existingEmailCheck, urlsForUser } = require("./helper");
 
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userID1" },
@@ -31,44 +29,6 @@ const users = {
   }
 };
 
-// const existingEmail = function(email) {
-//   for (const user in users) {
-//     if (users[user].email === email) {
-//       return users[user].id;
-//     }
-//   }
-// };
-
-
-const existingUserCheck = function(email, database) {
-  for (const user in database) {
-    if (database[user].email === email) {
-      return database[user].id;
-    }
-  }
-};
-
-const existingEmailCheck = function(email, database) {
-  for (const user in database) {
-    if (database[user].email === email) {
-      return true;
-    }
-  }
-}
-
-const urlsForUser = function(id) {
-
-  const uniqueUserURLs = {};
-
-  for (const shortURLs in urlDatabase) {
-    if (urlDatabase[shortURLs].userID === id) {
-      uniqueUserURLs[shortURLs] = urlDatabase[shortURLs];
-    }
-  }
-
-  return uniqueUserURLs;
-
-};
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -80,7 +40,7 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const templateVars = {
-    urls: urlsForUser(req.session["user_id"]),
+    urls: urlsForUser(req.session["user_id"], urlDatabase),
     user: users[req.session["user_id"]],
   };
   res.render("urls_index", templateVars);
@@ -99,22 +59,22 @@ app.get("/urls/:shortURL", (req, res) => {
 
   if (userID) {
 
-  const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL].longURL,
-    uniqueUserID: urlDatabase[req.params.shortURL].userID,
-    user: users[req.session["user_id"]],
-  };
+    const templateVars = {
+      shortURL: req.params.shortURL,
+      longURL: urlDatabase[req.params.shortURL].longURL,
+      uniqueUserID: urlDatabase[req.params.shortURL].userID,
+      user: users[req.session["user_id"]],
+    };
 
-  console.log(templateVars);
-  res.render("urls_show", templateVars);
-} else {
-  const templateVars = {
-    error: "Please Login to view unique URL links",
-    user: null,
+    console.log(templateVars);
+    res.render("urls_show", templateVars);
+  } else {
+    const templateVars = {
+      error: "Please Login to view unique URL links",
+      user: null,
+    };
+    res.render("urls_error", templateVars);
   }
-  res.render("urls_error", templateVars);
-}
 });
 
 
@@ -163,7 +123,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   // console.log(idToDelete);
 
   const userID = req.session["user_id"];
-  const uniqueUserURLs = urlsForUser(userID);
+  const uniqueUserURLs = urlsForUser(userID, urlDatabase);
 
   console.log(uniqueUserURLs);
 
@@ -188,7 +148,7 @@ app.post("/urls/:shortURL", (req, res) => {
   // res.redirect('/urls');
 
   const userID = req.session["user_id"];
-  const uniqueUserURLs = urlsForUser(userID);
+  const uniqueUserURLs = urlsForUser(userID, urlDatabase);
 
   
   if (Object.keys(uniqueUserURLs).includes(req.params.shortURL)) {
@@ -216,7 +176,7 @@ app.post("/login", (req, res) => {
     const templateVars = {
       error: "Email not found",
       user: null,
-    }
+    };
     res.render("urls_error", templateVars);
   } else {
     const existingUserID = existingUserCheck(providedEmail, users);
@@ -227,7 +187,7 @@ app.post("/login", (req, res) => {
       const templateVars = {
         error: "Incorrect Password",
         user: null,
-      }
+      };
       res.render("urls_error", templateVars);
     }
   }
@@ -249,13 +209,13 @@ app.post("/register", (req, res) => {
     const templateVars = {
       error: "Please include a valid email and password into the form",
       user: null,
-    }
+    };
     res.render("urls_error", templateVars);
   } else if (existingEmailCheck(providedEmail, users)) {
     const templateVars = {
       error: "An account already exists with this email address",
       user: null,
-    }
+    };
     res.render("urls_error", templateVars);
   } else {
     users[newUserID] = {
