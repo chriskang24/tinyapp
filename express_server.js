@@ -34,6 +34,20 @@ const existingEmail = function(email) {
   }
 };
 
+const urlsForUser = function(id) {
+
+  const uniqueUserURLs = {};
+
+  for (const shortURLs in urlDatabase) {
+    if (urlDatabase[shortURLs].userID === id) {
+      uniqueUserURLs[shortURLs] = urlDatabase[shortURLs]
+    }
+  }
+
+  return uniqueUserURLs;
+
+};
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -44,7 +58,7 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const templateVars = {
-    urls: urlDatabase,
+    urls: urlsForUser(req.cookies["user_id"]),
     user: users[req.cookies["user_id"]],
   };
   res.render("urls_index", templateVars);
@@ -61,8 +75,11 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
+    uniqueUserID: urlDatabase[req.params.shortURL].userID,
     user: users[req.cookies["user_id"]],
   };
+
+  // console.log(templateVars);  
   res.render("urls_show", templateVars);
 });
 
@@ -111,22 +128,44 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const idToDelete = req.params.shortURL;
+  // const idToDelete = req.params.shortURL;
   // console.log(idToDelete);
-  delete urlDatabase[idToDelete];
-  res.redirect('/urls');
+
+  const userID = req.cookies["user_id"];
+  const uniqueUserURLs = urlsForUser(userID);
+
+  console.log(uniqueUserURLs);
+
+  if (Object.keys(uniqueUserURLs).includes(req.params.shortURL)) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('/urls');
+  } else {
+    return res.send(401);
+  }
+
+  // delete urlDatabase[idToDelete];
+  // res.redirect('/urls');
 });
 
 app.post("/urls/:shortURL", (req, res) => {
   // res.send("ok")
   // console.log(req.params.shortURL);
 
-  const newLink = req.body.urltoedit;
-  const keyToUpdate = req.params.shortURL;
+  // const newLink = req.body.urltoedit;
+  // const keyToUpdate = req.params.shortURL;
+  // urlDatabase[keyToUpdate] = newLink;
+  // res.redirect('/urls');
 
-  urlDatabase[keyToUpdate] = newLink;
+  const userID = req.cookies["user_id"];
+  const uniqueUserURLs = urlsForUser(userID);
 
-  res.redirect('/urls');
+  if (Object.keys(uniqueUserURLs).includes(req.params.shortURL)) {
+    const shortURL = req.params.shortURL;
+    urlDatabase[shortURL] = { longURL: req.body.longURL, userID };
+    res.redirect('/urls');
+  } else {
+    return res.send(401);
+  }
 
 });
 
@@ -176,7 +215,8 @@ app.post("/register", (req, res) => {
       password: providedPassword
     };
   }
-  console.log(users);
+  // remove this consolelog once testing complete
+  // console.log(users);
   res.cookie("user_id", newUserID);
   res.redirect("/urls");
   
