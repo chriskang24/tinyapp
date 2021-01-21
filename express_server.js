@@ -14,7 +14,7 @@ app.use(cookieSession({
   keys: ['key1', 'key2']
 }));
 
-const { generateRandomString, existingUserCheck, existingEmailCheck, urlsForUser } = require("./helper");
+const { generateRandomString, existingUserCheck, existingEmailCheck, urlsForUser } = require("./helpers");
 
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userID1" },
