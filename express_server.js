@@ -29,7 +29,7 @@ const users = {};
 // Routing all GET requests below:
 
 app.get("/", (req, res) => {
-  if (req.session["user_id"]) {
+  if (users[req.session["user_id"]]) {
     res.redirect("/urls");
   } else {
     res.redirect("/login");
@@ -37,11 +37,15 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  if (users[req.session["user_id"]]) {
   const templateVars = {
     urls: urlsForUser(req.session["user_id"], urlDatabase),
     user: users[req.session["user_id"]],
   };
   res.render("urls_index", templateVars);
+} else {
+  res.status(403).redirect("/login");
+}
 });
 
 
@@ -82,6 +86,8 @@ app.get("/login", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const userID = req.session["user_id"];
   if (userID) {
+    const validLongURL = urlDatabase[req.params.shortURL].longURL;
+    if (validLongURL) {
     const templateVars = {
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL].longURL,
@@ -90,22 +96,26 @@ app.get("/urls/:shortURL", (req, res) => {
     };
     res.render("urls_show", templateVars);
   } else {
-    res.status(404).send("The ShortURL entered does not match a valid longURL");
+    const templateVars = {
+      error: "The ShortURL entered does not match a valid longURL",
+      user: null,
+    };
+    res.render("urls_error", templateVars);
   }
-});
+}});
 
 app.get("/u/:shortURL", (req, res) => {
-  const userID = req.session["user_id"];
-  if (userID) {
+ 
     const longURL = urlDatabase[req.params.shortURL].longURL;
-    if (longURL === undefined) {
-      res.status(302);
-    } else {
+    if (res.status(200)) {
       res.redirect(longURL);
+    } else {
+      const templateVars = {
+        error: "The ShortURL entered does not match a valid longURL",
+        user: null,
+      };
+      res.render("urls_error", templateVars);
     }
-  } else {
-    res.status(404).send("The ShortURL entered does not match a valid longURL");
-  }
 });
 
 // Routing all POST requests below:
