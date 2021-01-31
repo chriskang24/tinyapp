@@ -31,6 +31,7 @@ Users' Dedicated URLs that were created:
 - body-parser
 - cookie-session
 - method-override
+- Nodemon
 
 ## Getting Started
 
